@@ -4,10 +4,9 @@ var webrtcSupport = require('webrtcsupport');
 var attachMediaStream = require('attachmediastream');
 var getScreenMedia = require('getscreenmedia');
 var mockconsole = require('mockconsole');
-var io = require('socket.io-client');
 
 
-function SimpleWebRTC(opts) {
+function SimpleWebRTC(connection, opts) {
     var self = this;
     var options = opts || {};
     var config = this.config = {
@@ -21,7 +20,7 @@ function SimpleWebRTC(opts) {
             adjustPeerVolume: true,
             peerVolumeWhenSpeaking: 0.25
         };
-    var item, connection;
+    var item;
 
     // We also allow a 'logger' option. It can be any object that implements
     // log, warn, and error methods.
