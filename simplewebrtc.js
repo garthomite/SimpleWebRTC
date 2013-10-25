@@ -10,7 +10,6 @@ function SimpleWebRTC(connection, opts) {
     var self = this;
     var options = opts || {};
     var config = this.config = {
-            url: 'http://signaling.simplewebrtc.com:8888',
             debug: false,
             localVideoEl: '',
             remoteVideosEl: '',
@@ -50,16 +49,13 @@ function SimpleWebRTC(connection, opts) {
     // call WildEmitter constructor
     WildEmitter.call(this);
 
-    // our socket.io connection
-    connection = this.connection = io.connect(this.config.url);
-
-    connection.on('connect', function () {
+    connection.on('rtc-connect', function () {
         self.emit('connectionReady', connection.socket.sessionid);
         self.sessionReady = true;
         self.testReadiness();
     });
 
-    connection.on('message', function (message) {
+    connection.on('rtc-message', function (message) {
         var peers = self.webrtc.getPeers(message.from, message.roomType);
         var peer;
 
@@ -81,7 +77,7 @@ function SimpleWebRTC(connection, opts) {
         }
     });
 
-    connection.on('remove', function (room) {
+    connection.on('rtc-remove', function (room) {
         if (room.id !== self.connection.socket.sessionid) {
             self.webrtc.removePeers(room.id, room.type);
         }
@@ -114,7 +110,7 @@ function SimpleWebRTC(connection, opts) {
     });
 
     this.webrtc.on('message', function (payload) {
-       self.connection.emit('message', payload);
+       self.connection.emit('rtc-message', payload);
     });
 
     this.webrtc.on('peerStreamAdded', this.handlePeerStreamAdded.bind(this));
@@ -138,7 +134,7 @@ SimpleWebRTC.prototype = Object.create(WildEmitter.prototype, {
 
 SimpleWebRTC.prototype.leaveRoom = function () {
     if (this.roomName) {
-        this.connection.emit('leave', this.roomName);
+        this.connection.emit('rtc-leave', this.roomName);
         this.webrtc.peers.forEach(function (peer) {
             peer.end();
         });
@@ -185,7 +181,7 @@ SimpleWebRTC.prototype.setVolumeForAll = function (volume) {
 SimpleWebRTC.prototype.joinRoom = function (name, cb) {
     var self = this;
     this.roomName = name;
-    this.connection.emit('join', name, function (err, roomDescription) {
+    this.connection.emit('rtc-join', name, function (err, roomDescription) {
         if (err) {
             self.emit('error', err);
         } else {
@@ -277,7 +273,7 @@ SimpleWebRTC.prototype.shareScreen = function (cb) {
             // the "stopScreenShare" method to clean things up.
 
             self.emit('localScreenAdded', el);
-            self.connection.emit('shareScreen');
+            self.connection.emit('rtc-shareScreen');
             self.webrtc.peers.forEach(function (existingPeer) {
                 var peer;
                 if (existingPeer.type === 'video') {
@@ -304,7 +300,7 @@ SimpleWebRTC.prototype.getLocalScreen = function () {
 };
 
 SimpleWebRTC.prototype.stopScreenShare = function () {
-    this.connection.emit('unshareScreen');
+    this.connection.emit('rtc-unshareScreen');
     var videoEl = document.getElementById('localScreen');
     var container = this.getRemoteVideoContainer();
     var stream = this.getLocalScreen();
